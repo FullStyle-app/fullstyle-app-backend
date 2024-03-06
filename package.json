@@ -1,10 +1,10 @@
 {
-  "name": "our-cool-project-backend-server",
+  "name": "fullstyle-app-backend-server",
   "version": "0.0.0",
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon app.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
