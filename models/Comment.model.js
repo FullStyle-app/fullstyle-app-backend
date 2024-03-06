@@ -1,20 +1,22 @@
-const { Schema, model } = require('mongoose');
-const { isAuthenticated } = require("../middleware/jwt.middleware.js");
+const mongoose = require('mongoose');
 
-const commentModel = new Schema({
-    name: { // if isAuthenticated==true, then name=user.username, else name=Anonymous
-        type: String,
-        required: true,
-        default: "Anonymous"
-    },
-    comment: {
-        type: String,
-        required: true,
-        default: "Enter your comment here. Please be respectful and constructive."
-    },
+const commentSchema = new mongoose.Schema({
+  postId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Post',
+    required: true
+  },
+  text: {
+    type: String,
+    required: true
+  },
+  author: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+
+  }
 });
 
-const Comment = model('Comment', commentModel);
+const Comment = mongoose.model('Comment', commentSchema);
+
 module.exports = Comment;
-
-
