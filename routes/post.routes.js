@@ -1,22 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
-const cloudinary = require('cloudinary').v2; // Import Cloudinary SDK
-const multer = require('multer'); // Import multer for handling file uploads
+
+const { isAuthenticated } = require("../middleware/jwt.middleware.js"); // Middleware to protect routes
 
 const Post = require("../models/Post.model");
+const User = require("../models/User.model");
+const fileUploader = require("../config/cloudinary.config");
 
-// Configure Cloudinary with your credentials
-cloudinary.config({
-  cloud_name: 'your_cloud_name',
-  api_key: 'your_api_key',
-  api_secret: 'your_api_secret'
-});
-
-// Configure multer to store uploaded files in memory
-const upload = multer();
-
-//GET /api/posts  -  Retrieves all posts
+//GET /posts/  -  Retrieves all posts
 router.get("/", (req, res, next) => {
     Post.find()
         .populate("author")
@@ -32,31 +24,31 @@ router.get("/", (req, res, next) => {
 
 
 
-// POST /api/posts/create  -  Creates a new post with image uploads to Cloudinary
-router.post("/create", upload.array('images', 3), async (req, res, next) => {
+// POST /api/posts/create  - 
+router.post("/create", isAuthenticated, async (req, res, next) => {
   try {
-    const { title, description, linkToWebsite, linkToCode, author, category, tags } = req.body;
-    const images = req.files; // Get uploaded images from multer
+    const { title, image1, image2, image3, description, linkToWebsite, linkToCode, category, tags } = req.body;
+ 
+    const author = req.payload._id; // Get the user ID from the JWT payload
 
-    // Upload images to Cloudinary and get public IDs
-    const imagePublicIds = await Promise.all(images.map(async (image) => {
-      const result = await cloudinary.uploader.upload(image.buffer.toString('base64'));
-      return result.public_id;
-    }));
+   
 
     // Create new post with imagePublicIds
     const newPost = await Post.create({
       title,
       description,
-      image1: imagePublicIds[0] || '', // Store public ID of first image (or empty string if not provided)
-      image2: imagePublicIds[1] || '', // Store public ID of second image (or empty string if not provided)
-      image3: imagePublicIds[2] || '', // Store public ID of third image (or empty string if not provided)
+      image1, 
+      image2,
+      image3, 
       linkToWebsite,
       linkToCode,
-      author,
+      author: author,
       category,
       tags
     });
+
+    // Add the new post to the user's posts array
+    await User.findByIdAndUpdate(author, { $push: { posts: newPost._id } });
 
     res.status(201).json(newPost);
   } catch (error) {
@@ -64,8 +56,16 @@ router.post("/create", upload.array('images', 3), async (req, res, next) => {
   }
 });
 
-
-
+router.post("/upload", fileUploader.single("imageUrl"), (req, res, next) => {
+    // console.log("file is: ", req.file)
+   
+    if (!req.file) {
+      next(new Error("No file uploaded!"));
+      return;
+    }
+    res.json({ fileUrl: req.file.path });
+});
+ 
 
 //  GET /api/posts/:postId  - Retrieves a specific post by id
 router.get("/:postId", (req, res, next) => {
@@ -82,8 +82,23 @@ router.get("/:postId", (req, res, next) => {
         .catch((error) => res.status(500).json({ message: error.message }));
 });
 
-// PUT  /api/posts/:postId  - Updates a specific post by id
-router.put("/:postId", (req, res, next) => {
+// GET /posts/u/:userId  - Retrieves all posts from a specific user
+router.get("/u/:userId", (req, res, next) => {
+    const { userId } = req.params;
+    Post.find({author:userId})
+      .then((posts) => {
+        if (!posts) {
+          res.status(404).json({ message: "Posts from this user not found" });
+        } else {
+          res.json(posts);
+          User.findByIdAndUpdate(userId, { posts: posts});
+        }
+      })
+      .catch((err) => res.status(400).json(err));
+  });
+
+// PUT  /posts/:postId  - Updates a specific post by id
+router.put("/:postId", isAuthenticated, (req, res, next) => {
     const { postId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(postId)) {
@@ -91,18 +106,25 @@ router.put("/:postId", (req, res, next) => {
         return;
     }
 
-    Post.findByIdAndUpdate(postId, req.body, { new: true })
-        .then((updatedPost) => {
-            if (!updatedPost) {
+    const userId = (req) => req.payload.id;
+    const { title, description, image1, image2, image3, linkToWebsite, linkToCode, category, tags } = req.body;
+
+    Post.findById(postId)
+        .then((post) => {
+            if (!post) {
                 return res.status(404).json({ message: 'Post not found' });
             }
-            res.json(updatedPost);
+            if (userId === post.author.toString()) {
+                return Post.findByIdAndUpdate(postId, req.body, { new: true });
+            } else {
+                res.status(403).json({ message: "Unauthorized" });
+            }
         })
         .catch((err) => res.status(400).json(err));
 });
 
 //  DELETE /api/posts/:postId  - Deletes a specific post by id
-router.delete("/:postId", (req, res, next) => {
+router.delete("/:postId", isAuthenticated, (req, res, next) => {
     const { postId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(postId)) {

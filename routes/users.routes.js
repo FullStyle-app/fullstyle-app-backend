@@ -3,6 +3,7 @@ const router = express.Router();
 const mongoose = require("mongoose");
 
 const User = require("../models/User.model");
+const Post = require("../models/Post.model");
 
 //GET /users/  -  Retrieves all users
 router.get("/", (req, res, next) => {
@@ -19,15 +20,14 @@ router.get("/", (req, res, next) => {
 });
 
 //GET /users/:id  -  Retrieves a specific user
-router.get("/:id", (req, res, next) => {
-  const { id } = req.params;
-  User.findById(id)
-    .populate("posts")
-    .then((user) => {
-      if (!user) {
+router.get("/:userId", (req, res, next) => {
+  const { userId } = req.params;
+  User.findById(userId)
+    .then((posts) => {
+      if (!posts) {
         res.status(404).json({ message: "User not found" });
       } else {
-        res.json(user);
+        res.json(posts);
       }
     })
     .catch((err) => res.status(400).json(err));

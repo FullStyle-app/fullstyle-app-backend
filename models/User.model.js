@@ -1,4 +1,5 @@
-const { Schema, model } = require("mongoose");
+const mongoose = require('mongoose');
+const { Schema, model } = require('mongoose');
 
 const userSchema = new Schema(
   {
@@ -40,6 +41,10 @@ const userSchema = new Schema(
     github: {
       type: String,
     },
+    posts: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Post'
+  }]
     }
 
 );
