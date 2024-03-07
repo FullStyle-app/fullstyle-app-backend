@@ -56,6 +56,8 @@ router.post("/create", isAuthenticated, async (req, res, next) => {
   }
 });
 
+
+//POST /posts/upload  -  Uploads a file to Cloudinary
 router.post("/upload", fileUploader.single("imageUrl"), (req, res, next) => {
     // console.log("file is: ", req.file)
    
