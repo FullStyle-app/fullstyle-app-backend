@@ -1,6 +1,7 @@
+const mongoose = require('mongoose');
 const { Schema, model } = require('mongoose');
 
-const postModel = new Schema({
+const postModel = new mongoose.Schema({
 title: {
     type: String,
     required: true,
@@ -30,7 +31,7 @@ description: {
         default: "Share your code with the FullStylers' community"
     },
     author: {
-        type: Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
     category: {

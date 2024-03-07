@@ -6,43 +6,60 @@ const User = require("../models/User.model");
 
 //GET /users/  -  Retrieves all users
 router.get("/", (req, res, next) => {
-    User.find()
-        .then((allUsers) => {
-            if (allUsers.length === 0) {
-                res.json({ message: 'No users in there' });
-            } else {
-                res.json(allUsers);
-            }
-        })
-        .catch((err) => res.status(400).json(err));
+  User.find()
+    .populate("posts")
+    .then((allUsers) => {
+      if (allUsers.length === 0) {
+        res.json({ message: "No users in there" });
+      } else {
+        res.json(allUsers);
+      }
+    })
+    .catch((err) => res.status(400).json(err));
 });
 
 //GET /users/:id  -  Retrieves a specific user
 router.get("/:id", (req, res, next) => {
-    const { id } = req.params;
-    User.findById(id)
+  const { id } = req.params;
+  User.findById(id)
+    .populate("posts")
     .then((user) => {
-        if (!user) {
-            res.status(404).json({ message: 'User not found' });
-        } else {
-            res.json(user);
-        }
+      if (!user) {
+        res.status(404).json({ message: "User not found" });
+      } else {
+        res.json(user);
+      }
     })
-    .catch((err) => res.status(400).json(err))
+    .catch((err) => res.status(400).json(err));
 });
 
 //DELETE /users/:id  -  Deletes a specific user
 router.delete("/:id", (req, res, next) => {
-    const { id } = req.params;
-    User.findByIdAndDelete(id)
+  const { id } = req.params;
+  User.findByIdAndDelete(id)
     .then((user) => {
-        if (!user) {
-            res.status(404).json({ message: 'User not found' });
-        } else {
-            res.json(user);
-        }
+      if (!user) {
+        res.status(404).json({ message: "User not found" });
+      } else {
+        res.json(user);
+      }
     })
-    .catch((err) => res.status(400).json(err))
+    .catch((err) => res.status(400).json(err));
+});
+
+//PUT /users/:id  -  Updates a specific user
+router.put("/:id", (req, res, next) => {
+  const { id } = req.params;
+  User.findByIdAndUpdate(id, req.body)
+    .populate("posts")
+    .then((user) => {
+      if (!user) {
+        res.status(404).json({ message: "User not found" });
+      } else {
+        res.json(user);
+      }
+    })
+    .catch((err) => res.status(400).json(err));
 });
 
 module.exports = router;

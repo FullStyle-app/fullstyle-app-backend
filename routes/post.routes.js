@@ -1,12 +1,25 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
+const cloudinary = require('cloudinary').v2; // Import Cloudinary SDK
+const multer = require('multer'); // Import multer for handling file uploads
 
 const Post = require("../models/Post.model");
+
+// Configure Cloudinary with your credentials
+cloudinary.config({
+  cloud_name: 'your_cloud_name',
+  api_key: 'your_api_key',
+  api_secret: 'your_api_secret'
+});
+
+// Configure multer to store uploaded files in memory
+const upload = multer();
 
 //GET /api/posts  -  Retrieves all posts
 router.get("/", (req, res, next) => {
     Post.find()
+        .populate("author")
         .then((allPosts) => {
             if (allPosts.length === 0) {
                 res.json({ message: 'No posts in there' });
@@ -17,22 +30,49 @@ router.get("/", (req, res, next) => {
         .catch((err) => res.status(400).json(err));
 });
 
-//  POST /api/posts  -  Creates a new post
-router.post("/create", (req, res, next) => {
-    const { title, description, image1, image2, image3, linkToWebsite, linkToCode, author, category, tags } = req.body;
 
-    Post.create({ title, description, image1, image2, image3, linkToWebsite, linkToCode, author, category, tags })
-        .then((newPost) => {
-            res.status(201).json(newPost);
-        })
-        .catch((err) => res.status(400).json(err));
+
+// POST /api/posts/create  -  Creates a new post with image uploads to Cloudinary
+router.post("/create", upload.array('images', 3), async (req, res, next) => {
+  try {
+    const { title, description, linkToWebsite, linkToCode, author, category, tags } = req.body;
+    const images = req.files; // Get uploaded images from multer
+
+    // Upload images to Cloudinary and get public IDs
+    const imagePublicIds = await Promise.all(images.map(async (image) => {
+      const result = await cloudinary.uploader.upload(image.buffer.toString('base64'));
+      return result.public_id;
+    }));
+
+    // Create new post with imagePublicIds
+    const newPost = await Post.create({
+      title,
+      description,
+      image1: imagePublicIds[0] || '', // Store public ID of first image (or empty string if not provided)
+      image2: imagePublicIds[1] || '', // Store public ID of second image (or empty string if not provided)
+      image3: imagePublicIds[2] || '', // Store public ID of third image (or empty string if not provided)
+      linkToWebsite,
+      linkToCode,
+      author,
+      category,
+      tags
+    });
+
+    res.status(201).json(newPost);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 });
+
+
+
 
 //  GET /api/posts/:postId  - Retrieves a specific post by id
 router.get("/:postId", (req, res, next) => {
     const { postId } = req.params;
 
     Post.findById(postId)
+        .populate("author")
         .then((post) => {
             if (!post) {
                 return res.status(404).json({ message: 'Post not found' });

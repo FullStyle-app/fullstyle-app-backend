@@ -39,7 +39,6 @@ const userSchema = new Schema(
     },
     github: {
       type: String,
-      default: "I don't have a GitHub account yet",
     },
     }
 

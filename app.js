@@ -12,7 +12,7 @@ const authRoutes = require("./routes/auth.routes");
 const commentRoutes = require('./routes/comment.routes');
 
 // Middleware and configuration setup
-require("./config")(app);
+require("./config/config")(app);
 
 // Routes
 app.use("/api", indexRoutes);
