@@ -41,13 +41,10 @@ router.post("/create", isAuthenticated, async (req, res, next) => {
       image1, 
       linkToWebsite,
       linkToCode,
-      author: author,
+      author,
       category,
       tags
     });
-
-    // Add the new post to the user's posts array
-   await User.findByIdAndUpdate(author, { $push: { posts: newPost._id } });
 
     res.status(201).json(newPost);
   } catch (error) {
@@ -93,31 +90,34 @@ router.get("/u/:userId", (req, res, next) => {
           res.status(404).json({ message: "Posts from this user not found" });
         } else {
           res.json(posts);
-          User.findByIdAndUpdate(userId, { posts: posts});
         }
       })
       .catch((err) => res.status(400).json(err));
   });
 
 // PUT  /posts/:postId  - Updates a specific post by id
-router.put("/:postId", (req, res, next) => {
+router.put("/:postId", isAuthenticated, (req, res, next) => {
     const { postId } = req.params;
+    const user = req.payload._id;
+    const { title, description, image1, linkToWebsite, linkToCode, category, tags } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(postId)) {
         res.status(400).json({ message: "Specified id is not valid" });
         return;
     }
 
-    const userId = (req) => req.payload.id;
-    const { title, description, image1, image2, image3, linkToWebsite, linkToCode, category, tags } = req.body;
-
     Post.findById(postId)
         .then((post) => {
             if (!post) {
                 return res.status(404).json({ message: 'Post not found' });
             }
-            if (userId === post.author.toString()) {
-                return Post.findByIdAndUpdate(postId, req.body, { new: true });
+            if (user === post.author.toString()) {
+                Post.findByIdAndUpdate(postId, req.body, { new: true })
+                .then ((updatedPost) => {
+                    res.status(200).json(updatedPost)
+                    console.log('post updated')
+                })
+                .catch ((error) => res.status(400).json({message: "Error updating post"}))
             } else {
                 res.status(403).json({ message: "Unauthorized" });
             }
@@ -134,10 +134,17 @@ router.delete("/:postId", isAuthenticated, (req, res, next) => {
         return;
     }
 
-    Post.findByIdAndDelete(postId)
-        .then((deletedPost) => {
-            if (!deletedPost) {
+    const user = req.payload._id;
+
+    Post.findById(postId)
+        .then((post) => {
+            if (!post) {
                 return res.status(404).json({ message: 'Post not found' });
+            }
+            if (user === post.author.toString()) {
+                return Post.findByIdAndDelete(postId);
+            } else {
+                res.status(403).json({ message: "Unauthorized" });
             }
             res.json({ message: 'Post deleted successfully' });
         })
