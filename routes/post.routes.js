@@ -24,10 +24,11 @@ router.get("/", (req, res, next) => {
 
 
 
-// POST /api/posts/create  - 
+// POST /posts/create  - 
 router.post("/create", isAuthenticated, async (req, res, next) => {
   try {
-    const { title, image1, image2, image3, description, linkToWebsite, linkToCode, category, tags } = req.body;
+    const { title, description, image1, linkToWebsite, linkToCode, category, tags } = req.body;
+
  
     const author = req.payload._id; // Get the user ID from the JWT payload
 
@@ -38,8 +39,6 @@ router.post("/create", isAuthenticated, async (req, res, next) => {
       title,
       description,
       image1, 
-      image2,
-      image3, 
       linkToWebsite,
       linkToCode,
       author: author,
@@ -48,7 +47,7 @@ router.post("/create", isAuthenticated, async (req, res, next) => {
     });
 
     // Add the new post to the user's posts array
-    await User.findByIdAndUpdate(author, { $push: { posts: newPost._id } });
+   await User.findByIdAndUpdate(author, { $push: { posts: newPost._id } });
 
     res.status(201).json(newPost);
   } catch (error) {
@@ -58,14 +57,15 @@ router.post("/create", isAuthenticated, async (req, res, next) => {
 
 
 //POST /posts/upload  -  Uploads a file to Cloudinary
-router.post("/upload", fileUploader.single("imageUrl"), (req, res, next) => {
-    // console.log("file is: ", req.file)
-   
+router.post("/upload", fileUploader.single("image1"), (req, res, next) => {
+    console.log("file is: ", req.file)
+
+
     if (!req.file) {
       next(new Error("No file uploaded!"));
       return;
     }
-    res.json({ fileUrl: req.file.path });
+    res.json({ image1: req.file.path });
 });
  
 
@@ -100,7 +100,7 @@ router.get("/u/:userId", (req, res, next) => {
   });
 
 // PUT  /posts/:postId  - Updates a specific post by id
-router.put("/:postId", isAuthenticated, (req, res, next) => {
+router.put("/:postId", (req, res, next) => {
     const { postId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(postId)) {
