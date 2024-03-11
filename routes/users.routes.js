@@ -9,7 +9,6 @@ const { isAuthenticated } = require("../middleware/jwt.middleware");
 //GET /users/  -  Retrieves all users
 router.get("/", (req, res, next) => {
   User.find()
-    .populate("posts")
     .then((allUsers) => {
       if (allUsers.length === 0) {
         res.json({ message: "No users in there" });
@@ -83,16 +82,32 @@ router.post("/favorites", isAuthenticated, (req, res, next) => {
   const id = req.payload._id;
   const { postId } = req.body;
 
-  User.findByIdAndUpdate(id, { $push: { favorites: postId } }, { new: true } )
+  if (!mongoose.Types.ObjectId.isValid(postId)) {
+    res.status(400).json({ message: "Specified post does not exist" });
+    return;
+  }
+
+  User.findById(id)
     .then((user) => {
       if (!user) {
         res.status(404).json({ message: "User not found" });
-      } else {
-        res.json(user);
+        return;
       }
+
+      if (user.favorites.includes(postId)) {
+        res.json({ message: "Post already in favorites" });
+        return;
+      }
+
+      User.findByIdAndUpdate(id, { $push: { favorites: postId } }, { new: true })
+        .then((updatedUser) => {
+          res.json(updatedUser);
+        })
+        .catch((err) => res.status(400).json(err));
     })
     .catch((err) => res.status(400).json(err));
 });
+
 
 
 module.exports = router;
