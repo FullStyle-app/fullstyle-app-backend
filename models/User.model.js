@@ -13,6 +13,7 @@ const userSchema = new Schema(
     password: {
       type: String,
       required: [true, "Please enter your password."],
+      //to hide 
     },
     username: {
       type: String,
@@ -46,7 +47,6 @@ const userSchema = new Schema(
       ref: 'Post'
   }]
     }
-
 );
 
 const User = model("User", userSchema);
