@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 
 const User = require("../models/User.model");
 const Post = require("../models/Post.model");
+const { isAuthenticated } = require("../middleware/jwt.middleware");
 
 //GET /users/  -  Retrieves all users
 router.get("/", (req, res, next) => {
@@ -52,6 +53,37 @@ router.put("/:id", (req, res, next) => {
   const { id } = req.params;
   User.findByIdAndUpdate(id, req.body)
     .populate("posts")
+    .then((user) => {
+      if (!user) {
+        res.status(404).json({ message: "User not found" });
+      } else {
+        res.json(user);
+      }
+    })
+    .catch((err) => res.status(400).json(err));
+});
+
+// GET /users/:id/favorites - get the favorites of a specific user
+router.get("/:id/favorites", (req, res, next) => {
+  const { id } = req.params;
+  User.findById(id)
+    .populate("favorites")
+    .then((user) => {
+      if (!user) {
+        res.status(404).json({ message: "User not found" });
+      } else {
+        res.json(user.favorites);
+      }
+    })
+    .catch((err) => res.status(400).json(err));
+});
+
+// POST /users/favorites - add a post to the favorites of a specific user
+router.post("/favorites", isAuthenticated, (req, res, next) => {
+  const id = req.payload._id;
+  const { postId } = req.body;
+
+  User.findByIdAndUpdate(id, { $push: { favorites: postId } }, { new: true } )
     .then((user) => {
       if (!user) {
         res.status(404).json({ message: "User not found" });

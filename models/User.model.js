@@ -41,7 +41,7 @@ const userSchema = new Schema(
     github: {
       type: String,
     },
-    posts: [{
+    favorites: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Post'
   }]
