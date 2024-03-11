@@ -15,7 +15,7 @@ router.get('/', (req, res) => {
 });
 
 // POST /comments/create  -  Creates a new comment
-router.post('/:postId/create', isAuthenticated, (req, res) => {
+router.post('/:postId', isAuthenticated, (req, res) => {
     const { postId } = req.params;
     const { text } = req.body;
     const author = req.payload._id;
@@ -31,7 +31,7 @@ router.post('/:postId/create', isAuthenticated, (req, res) => {
   
 
 //GET /comments/:postId  -  Retrieves all comments for a specific post
-router.get('/:postId', isAuthenticated, (req, res) => {
+router.get('/:postId', (req, res) => {
   const { postId } = req.params;
 
   Comment.find({ postId: postId })

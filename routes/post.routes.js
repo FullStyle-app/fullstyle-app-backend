@@ -125,16 +125,17 @@ router.put("/:postId", isAuthenticated, (req, res, next) => {
         .catch((err) => res.status(400).json(err));
 });
 
-//  DELETE /api/posts/:postId  - Deletes a specific post by id
+//  DELETE /posts/:postId  - Deletes a specific post by id
 router.delete("/:postId", isAuthenticated, (req, res, next) => {
     const { postId } = req.params;
+    const user = req.payload._id;
 
     if (!mongoose.Types.ObjectId.isValid(postId)) {
         res.status(400).json({ message: "Specified id is not valid" });
         return;
     }
 
-    const user = req.payload._id;
+    
 
     Post.findById(postId)
         .then((post) => {
@@ -146,6 +147,8 @@ router.delete("/:postId", isAuthenticated, (req, res, next) => {
             } else {
                 res.status(403).json({ message: "Unauthorized" });
             }
+        })
+        .then(() =>{
             res.json({ message: 'Post deleted successfully' });
         })
         .catch((error) => res.status(500).json({ message: error.message }));
