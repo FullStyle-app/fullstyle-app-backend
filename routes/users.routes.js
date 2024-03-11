@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const User = require("../models/User.model");
 const Post = require("../models/Post.model");
 const { isAuthenticated } = require("../middleware/jwt.middleware");
+const fileUploader = require("../config/cloudinary.config");
 
 //GET /users/  -  Retrieves all users
 router.get("/", (req, res, next) => {
@@ -37,21 +38,6 @@ router.get("/:userId", (req, res, next) => {
 router.delete("/:id", (req, res, next) => {
   const { id } = req.params;
   User.findByIdAndDelete(id)
-    .then((user) => {
-      if (!user) {
-        res.status(404).json({ message: "User not found" });
-      } else {
-        res.json(user);
-      }
-    })
-    .catch((err) => res.status(400).json(err));
-});
-
-//PUT /users/:id  -  Updates a specific user
-router.put("/:id", (req, res, next) => {
-  const { id } = req.params;
-  User.findByIdAndUpdate(id, req.body)
-    .populate("posts")
     .then((user) => {
       if (!user) {
         res.status(404).json({ message: "User not found" });
@@ -108,6 +94,41 @@ router.post("/favorites", isAuthenticated, (req, res, next) => {
     .catch((err) => res.status(400).json(err));
 });
 
+// UPLOAD IMAGE /users/upload - upload an image
 
+router.post("/upload", fileUploader.single("img"), (req, res, next) => {
+  console.log("file is: ", req.file);
+
+  if (!req.file) {
+    next(new Error("No file uploaded!"));
+    return;
+  }
+  res.json({ img: req.file.path });
+});
+
+// PUT /users/:id  -  Updates a specific user
+router.put("/:id", isAuthenticated, (req, res, next) => {
+  const { id } = req.params; // user owner of the profile
+  const userId = req.payload._id; // user connected
+  const { email, username, bio, job, location, img, github } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    res.status(400).json({ message: "Specified id is not valid" });
+    return;
+  }
+
+  User.findById(id)
+    .then((user) => {
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      if (user._id.toString() == userId)
+        User.findByIdAndUpdate(id, req.body, { new: true })
+          .then((updatedUser) => {
+            res.json(updatedUser);
+          })
+          .catch((err) => res.status(400).json(err));
+    });
+});
 
 module.exports = router;

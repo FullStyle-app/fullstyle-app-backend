@@ -26,7 +26,6 @@ const userSchema = new Schema(
     },
     bio: {
       type: String,
-      default: "Introduce yourself to the community of FullStylers ! You'll be able to edit this presentation in your profile settings soon !",
     },
     job: {
       type: String,
