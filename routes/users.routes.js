@@ -108,6 +108,8 @@ router.post("/upload", fileUploader.single("img"), (req, res, next) => {
 
 // PUT /users/:id  -  Updates a specific user
 router.put("/:id", isAuthenticated, (req, res, next) => {
+
+
   const { id } = req.params; // user owner of the profile
   const userId = req.payload._id; // user connected
   const { email, username, bio, job, location, img, github } = req.body;
@@ -117,18 +119,22 @@ router.put("/:id", isAuthenticated, (req, res, next) => {
     return;
   }
 
-  User.findById(id)
-    .then((user) => {
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      if (user._id.toString() == userId)
-        User.findByIdAndUpdate(id, req.body, { new: true })
-          .then((updatedUser) => {
-            res.json(updatedUser);
-          })
-          .catch((err) => res.status(400).json(err));
-    });
+User.findById(id)
+  .then((user) => {
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    } else if (user._id.toString() == userId) {
+      return User.findByIdAndUpdate(id, req.body, { new: true });
+    } else {
+      return res.status(403).json({ message: "You are not allowed to update this user" });
+    }
+  })
+  .then((updatedUser) => {
+    if (updatedUser) {
+      res.json(updatedUser);
+    }
+  })
+  .catch((err) => res.status(400).json(err));
 });
 
 module.exports = router;
