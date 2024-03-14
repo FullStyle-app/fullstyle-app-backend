@@ -9,7 +9,7 @@ const isAuthenticated = (req, res, next) => {
 
     next();
   } catch (error) {
-    res.status(401).json({ message: "Authorization not granted" });
+    res.status(401).json({ message: "Sign-in or Log-in before doing this" });
   }
 };
 
